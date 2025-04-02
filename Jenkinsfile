@@ -43,7 +43,7 @@ pipeline {
             }
         }
 
-        stage('Tag & Push Docker Image to ECR') {
+        stage('Push Docker Image to ECR') {
             steps {
                 sh '''
                     docker tag $ECR_REPO_NAME:$IMAGE_TAG $ECR_URI/$ECR_REPO_NAME:$IMAGE_TAG
@@ -54,13 +54,18 @@ pipeline {
 
         stage('Deploy to ECS') {
             steps {
-                sh '''
-                    aws ecs update-service \
-                      --cluster springboot-cluster \
-                      --service springboot-service \
-                      --force-new-deployment \
-                      --region $AWS_REGION
-                '''
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: "${AWS_CREDENTIALS_ID}"
+                ]]) {
+                    sh '''
+                        aws ecs update-service \
+                          --cluster springboot-cluster \
+                          --service springboot-service \
+                          --force-new-deployment \
+                          --region $AWS_REGION
+                    '''
+                }
             }
         }
     }
