@@ -53,21 +53,24 @@ pipeline {
         }
 
         stage('Deploy to ECS') {
-            steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: "${AWS_CREDENTIALS_ID}"
-                ]]) {
-                    sh '''
-                        aws ecs update-service \
-                          --cluster springboot-cluster \
-                          --service springboot-service \
-                          --force-new-deployment \
-                          --region $AWS_REGION
-                    '''
-                }
-            }
+    steps {
+        withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding',
+            credentialsId: "${AWS_CREDENTIALS_ID}"
+        ]]) {
+            sh '''
+                aws ecs update-service \
+                  --cluster springboot-cluster \
+                  --service springboot-service \
+                  --force-new-deployment \
+                  --region $AWS_REGION
+            '''
         }
+    }
+}
+ 
+               
+                        
     }
 
     post {
