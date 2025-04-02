@@ -2,37 +2,74 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = 'rajcosivadevops/cicdncplimage'
-        DOCKER_TAG = 'latest'
+        AWS_REGION = 'us-east-2'
+        ECR_REPO_NAME = 'springboot-app'
+        ECR_URI = "060795913786.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        IMAGE_TAG = 'latest'
+        GIT_CREDENTIALS_ID = 'github-creds'
+        AWS_CREDENTIALS_ID = 'alogin'
     }
 
     stages {
-        stage('Docker Login & Pull') {
+        stage('Clone Repository') {
             steps {
-                script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhublogin', 
-                        usernameVariable: 'DOCKER_USER', 
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-                        sh "echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin"
-                    }
+                git credentialsId: "${GIT_CREDENTIALS_ID}", url: 'https://github.com/patelraj-41299/springboot-ecs-cicd.git', branch: 'main'
+            }
+        }
 
-                    sh "docker pull ${DOCKER_IMAGE}:${DOCKER_TAG}"
+        stage('Build Spring Boot App') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $ECR_REPO_NAME:$IMAGE_TAG .'
+            }
+        }
+
+        stage('Login to ECR') {
+            steps {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: "${AWS_CREDENTIALS_ID}"
+                ]]) {
+                    sh '''
+                        aws ecr get-login-password --region $AWS_REGION | \
+                        docker login --username AWS --password-stdin $ECR_URI
+                    '''
                 }
             }
         }
 
-        stage('Deploy Container') {
+        stage('Tag & Push Docker Image to ECR') {
             steps {
-                script {
-                    // Stop and remove existing container if running
-                    sh "docker rm -f springboot-container || true"
+                sh '''
+                    docker tag $ECR_REPO_NAME:$IMAGE_TAG $ECR_URI/$ECR_REPO_NAME:$IMAGE_TAG
+                    docker push $ECR_URI/$ECR_REPO_NAME:$IMAGE_TAG
+                '''
+            }
+        }
 
-                    // Run new container with specific name
-                    sh "docker run -d --name springboot-container -p 8081:9090 ${DOCKER_IMAGE}:${DOCKER_TAG}"
-                }
+        stage('Deploy to ECS') {
+            steps {
+                sh '''
+                    aws ecs update-service \
+                      --cluster springboot-cluster \
+                      --service springboot-service \
+                      --force-new-deployment \
+                      --region $AWS_REGION
+                '''
             }
         }
     }
+
+    post {
+        always {
+            echo '✅ Pipeline finished. Cleaning up Docker image...'
+            sh 'docker rmi $ECR_URI/$ECR_REPO_NAME:$IMAGE_TAG || true'
+        }
+    }
 }
+
