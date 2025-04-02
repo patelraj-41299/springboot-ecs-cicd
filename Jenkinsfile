@@ -7,7 +7,7 @@ pipeline {
         ECR_URI = "060795913786.dkr.ecr.${AWS_REGION}.amazonaws.com"
         IMAGE_TAG = 'latest'
         GIT_CREDENTIALS_ID = 'github-creds'
-        AWS_CREDENTIALS_ID = 'alogin'
+        AWS_CREDENTIALS_ID = 'alogin' // ✅ Your AWS credential ID in Jenkins
     }
 
     stages {
@@ -56,16 +56,16 @@ pipeline {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: "${AWS_CREDENTIALS_ID}"
+                    credentialsId: "alogin"
                 ]]) {
                     sh '''
-                        echo "🧪 Using AWS Credentials: $AWS_ACCESS_KEY_ID"
+                        echo "🧪 AWS Access Key: $AWS_ACCESS_KEY_ID"
 
                         aws ecs update-service \
                           --cluster springboot-cluster \
                           --service springboot-service \
                           --force-new-deployment \
-                          --region $AWS_REGION
+                          --region us-east-2
                     '''
                 }
             }
