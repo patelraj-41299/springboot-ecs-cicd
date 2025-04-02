@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
 
     <name>Spring Boot ECS App</name>
-    <description>Spring Boot application deployed to AWS ECS using Jenkins CI/CD</description>
+    <description>Spring Boot application deployed to AWS ECS using Jenkins</description>
 
     <properties>
         <java.version>17</java.version>
@@ -25,14 +25,14 @@
             <version>${spring-boot.version}</version>
         </dependency>
 
-        <!-- Spring Boot Actuator for monitoring (optional) -->
+        <!-- Spring Boot Actuator for health/monitoring -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
             <version>${spring-boot.version}</version>
         </dependency>
 
-        <!-- Spring Boot Test -->
+        <!-- Testing (Optional) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -57,7 +57,7 @@
                 </executions>
             </plugin>
 
-            <!-- Maven Compiler Plugin for Java 17 -->
+            <!-- Java Compiler Plugin -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -71,4 +71,3 @@
     </build>
 
 </project>
-
